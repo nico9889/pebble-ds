@@ -8,11 +8,11 @@
 > Long live to Pebble 🫶
 
 > [!WARNING]
-> This project relies on Speex to decode the audio packet received by the Pebble App.
+> This project relies on Speex to decode the audio packets received by the Pebble App.
 >
-> Unfortunately Speex is quite a old codec and the library for Python is unmaintained and unusable on recent Python versions.
+> Unfortunately Speex is quite a old codec and the Python library is unmaintained and it has become unusable on recent Python versions.
 >
-> This means that most of the libaries must be kept at an outdated version, with an always growing amount of opened security issues.
+> This means that most of the libaries must be kept at an outdated version to support older Python version, with an always growing amount of opened security issues.
 >
 > Use this software at your own risk.
 >
