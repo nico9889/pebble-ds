@@ -1,3 +1,23 @@
+> [!IMPORTANT]
+> This project is currently unmaintained.
+> If you still want to self-host your transcription service please take a look at these alternatives:
+> * https://github.com/wuerfeldev/pebble-ds
+> * https://github.com/jplexer/rebble-asr
+> * https://github.com/funnyname-pebble/fnws-asr
+>
+> Long live to Pebble 🫶
+
+> [!WARNING]
+> This project relies on Speex to decode the audio packet received by the Pebble App.
+>
+> Unfortunately Speex is quite a old codec and the library for Python is unmaintained and unusable on recent Python versions.
+>
+> This means that most of the libaries must be kept at an outdated version, with an always growing amount of opened security issues.
+>
+> Use this software at your own risk.
+>
+> **Some of the previously linked libraries make use a patched version of PySpeex that works with recent version of Python, so this warning doesn't apply to those.**
+
 # Pebble Offline Dictation Service
 
 This is a replacement dictation service based on Vosk Offline Speech To Text library.
