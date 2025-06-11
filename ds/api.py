@@ -39,6 +39,9 @@ def parse_chunks(stream):
 
 @routes.post("/NmspServlet/")
 def asr():
+    # TODO: some sort of authentication should be added here. This service is exposed to anyone on the internet and
+    #     it's not good
+
     stream = request.stream
 
     access_token, lang = request.host.split('.', 1)[0].split('-', 1)
