@@ -1,30 +1,18 @@
-from flask import Flask, request, Response
+from ds import rnnoise, decoder, recognizer, rec_lock
+
+from flask import request, Blueprint, current_app
+
+import audioop
+from flask import Response
+from pydub import AudioSegment
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
 import json
-from speex import SpeexDecoder
-from vosk import Model, KaldiRecognizer
-from rnnoise_wrapper import RNNoise
-from pydub import AudioSegment
-import audioop
 
-app = Flask(__name__)
-
-decoder = SpeexDecoder(1)
-
-model = Model(lang="it")
-rec = KaldiRecognizer(model, 16000)
-rec.SetWords(True)
-rec.SetPartialWords(True)
-
-try:
-    rnnoise = RNNoise("/usr/local/lib/librnnoise.so")
-except Exception as e:
-    rnnoise = None
-    print("RNNoise not found")
+routes = Blueprint('routes', __name__)
 
 
-@app.route("/heartbeat")
+@routes.route("/heartbeat")
 def heartbeat():
     return "asr"
 
@@ -34,8 +22,8 @@ def parse_chunks(stream):
     boundary = b'--' + request.headers['content-type'].split(';')[1].split('=')[1].encode(
         'utf-8').strip()  # super lazy/brittle parsing.
     this_frame = b''
-    while True:
-        content = stream.read(4096)
+    content = stream.read(4096)
+    while content != b'':
         this_frame += content
         end = this_frame.find(boundary)
         if end > -1:
@@ -47,13 +35,15 @@ def parse_chunks(stream):
                 except ValueError:
                     continue
                 yield content[:-2]
-        if content == b'':
-            break
+        content = stream.read(4096)
 
 
-@app.post("/NmspServlet/")
+@routes.post("/NmspServlet/")
 def asr():
     stream = request.stream
+
+    access_token, lang = request.host.split('.', 1)[0].split('-', 1)
+
 
     # Parsing request
     chunks = list(parse_chunks(stream))[3:]  # 0 = Content Type, 1 = Header?
@@ -65,12 +55,16 @@ def asr():
     response_part = Message()
     response_part.add_header('Content-Type', 'application/JSON; charset=utf-8')
 
-    try:
-        # complete = AudioSegment.empty()
+    # Dirty way to remove initial/final button click
+    if len(chunks) > 15:
+        chunks = chunks[12:-3]
 
-        # Dirty way to remove initial/final button click
-        if len(chunks) > 15:
-            chunks = chunks[12:-3]
+    # Locking the recognizer to ensure it's not shared between users
+    rec_lock.acquire()
+    # Resetting Recognizer
+    recognizer.Reset()
+
+    try:
         for chunk in chunks:
             decoded = decoder.decode(chunk)
             # Boosting the audio volume
@@ -79,16 +73,24 @@ def asr():
             if rnnoise:
                 audio = rnnoise.filter(audio[0:10]) + rnnoise.filter(audio[10:20])
             # Transcribing audio chunk
-            rec.AcceptWaveform(audio.raw_data)
+            recognizer.AcceptWaveform(audio.raw_data)
             # complete += audio
 
         # complete.export(out_f="out.wav", format="wav")
-        final = json.loads(rec.Result())
+        final = json.loads(recognizer.Result())
+    except Exception:
+        current_app.logger.error("Exception while transcribing audio", exc_info=True)
+        final = {"text": None, "result": []}
+        response_part.add_header('Content-Disposition', 'form-data; name="QueryRetry"')
+        response_part.set_payload(json.dumps({
+            "Cause": 1,
+            "Name": "AUDIO_INFO",
+            "Prompt": "Error while decoding incoming audio."
+        }))
 
+    try:
         if final["text"]:
-            output = []
-            for partial in final["result"]:
-                output.append({'word': partial["word"], 'confidence': str(partial["conf"])})
+            output = [{'word': partial["word"], 'confidence': str(partial["conf"])} for partial in final["result"]]
             output[0]['word'] += '\\*no-space-before'
             output[0]['word'] = output[0]['word'][0].upper() + output[0]['word'][1:]
             response_part.add_header('Content-Disposition', 'form-data; name="QueryResult"')
@@ -96,20 +98,20 @@ def asr():
                 'words': [output],
             }))
         else:
-            print("No words detected")
+            current_app.logger.debug("No words detected")
             response_part.add_header('Content-Disposition', 'form-data; name="QueryRetry"')
             response_part.set_payload(json.dumps({
                 "Cause": 1,
                 "Name": "AUDIO_INFO",
                 "Prompt": "Sorry, speech not recognized. Please try again."
             }))
-    except Exception as e:
-        print("Error occurred:", str(e))
+    except Exception:
+        current_app.logger.error("Exception occurred while transcribing audio", exc_info=True)
         response_part.add_header('Content-Disposition', 'form-data; name="QueryRetry"')
         response_part.set_payload(json.dumps({
             "Cause": 1,
             "Name": "AUDIO_INFO",
-            "Prompt": "Error while decoding incoming audio."
+            "Prompt": "Error while processing transcribed text.."
         }))
 
     # Closing response
@@ -120,5 +122,8 @@ def asr():
     response.headers['Content-Type'] = f'multipart/form-data; boundary={parts.get_boundary()}'
 
     # Resetting Recognizer
-    rec.Reset()
+    recognizer.Reset()
+
+    # Releasing lock
+    rec_lock.release()
     return response
