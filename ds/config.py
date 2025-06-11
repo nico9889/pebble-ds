@@ -4,7 +4,7 @@ from os import getenv
 ORIGINS = (getenv("DS_ORIGINS") or "*").split(",")
 
 # Boosts the volume before transcribing, it may enhance or worsen the transcription
-BOOST_VOLUME = getenv("DS_BOOST_VOLUME") or False
+BOOST_VOLUME = (getenv("DS_BOOST_VOLUME") or "false") == "true"
 
-ENABLE_DEEP_FILTER_NET = getenv("DS_ENABLE_DEEP_FILTER_NET") or False
+ENABLE_DEEP_FILTER_NET = (getenv("DS_ENABLE_DEEP_FILTER_NET") or "false") == "true"
 
