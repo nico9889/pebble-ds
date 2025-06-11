@@ -69,11 +69,11 @@ def asr():
         for chunk in chunks:
             decoded = decoder.decode(chunk)
             # Boosting the audio volume
-            decoded = audioop.mul(decoded, 2, 6)
+            if BOOST_VOLUME:
+                decoded = audioop.mul(decoded, 2, 6)
             # Transcribing audio chunk
             recognizer.AcceptWaveform(decoded)
 
-        # complete.export(out_f="out.wav", format="wav")
         final = json.loads(recognizer.Result())
     except Exception:
         current_app.logger.error("Exception while transcribing audio", exc_info=True)
