@@ -1,3 +1,4 @@
+# Map between Pebble-supported languages and Vosk available models
 MODEL_MAP = {
     'cs-cz': 'cs',
     'de-de': 'de',
