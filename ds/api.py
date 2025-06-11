@@ -1,21 +1,10 @@
 import wave
-from io import BytesIO
-
-from ds import decoder, recognizer, rec_lock, filter_model, df_state
-from ds.config import BOOST_VOLUME, ENABLE_DEEP_FILTER_NET, ENABLE_AUDIO_DEBUG
-
-if ENABLE_DEEP_FILTER_NET:
-    from df import enhance
-else:
-    def enhance(*args, **__):
-        try:
-            return args[2]
-        except IndexError:
-            return args
+import audioop
+from ds import decoder, recognizer, rec_lock, audio_processor
+from ds.config import BOOST_VOLUME, ENABLE_NOISE_REDUCTION, ENABLE_AUDIO_DEBUG
 
 from flask import request, Blueprint, current_app
 
-import audioop
 from flask import Response
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
@@ -31,7 +20,8 @@ def heartbeat():
 
 # From: https://github.com/pebble-dev/rebble-asr/blob/37302ebed464b7354accc9f4b6aa22736e12b266/asr/__init__.py#L27
 def parse_chunks(stream):
-    boundary = b'--' + request.headers['content-type'].split(';')[1].split('=')[1].encode('utf-8').strip()  # super lazy/brittle parsing.
+    boundary = b'--' + request.headers['content-type'].split(';')[1].split('=')[1].encode(
+        'utf-8').strip()  # super lazy/brittle parsing.
     this_frame = b''
     while True:
         content = stream.read(4096)
@@ -80,8 +70,19 @@ def asr():
         for chunk in chunks:
             decoded = decoder.decode(chunk)
             # Filters the audio before boosting
-            if ENABLE_DEEP_FILTER_NET:
-                decoded = enhance(filter_model, df_state, decoded)
+            if ENABLE_NOISE_REDUCTION:
+                frame_length = len(decoded)
+                if frame_length == 160 * 2:
+                    decoded = audio_processor.Process10ms(decoded)
+                elif frame_length == 160 * 4:
+                    a, b = decoded[0:320], decoded[320:640]
+                    a = audio_processor.Process10ms(a)
+                    b = audio_processor.Process10ms(b)
+                    decoded = bytearray()
+                    decoded.extend(a.audio)
+                    decoded.extend(b.audio)
+                else:
+                    current_app.logger.warning(f"Skipping frame denoise: frame length {frame_length} != 320")
 
             # Boosting the audio volume
             if BOOST_VOLUME:
