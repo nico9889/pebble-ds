@@ -1,5 +1,5 @@
-from ds import decoder, recognizer, rec_lock
-
+from ds import decoder, recognizer, rec_lock, filter_model, df_state
+from df import enhance
 from flask import request, Blueprint, current_app
 
 import audioop
@@ -8,7 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from email.message import Message
 import json
 
-from ds.config import BOOST_VOLUME
+from ds.config import BOOST_VOLUME, ENABLE_DEEP_FILTER_NET
 
 routes = Blueprint('routes', __name__)
 
@@ -68,6 +68,10 @@ def asr():
     try:
         for chunk in chunks:
             decoded = decoder.decode(chunk)
+            # Filters the audio before boosting
+            if ENABLE_DEEP_FILTER_NET:
+                decoded = enhance(filter_model, df_state, decoded)
+
             # Boosting the audio volume
             if BOOST_VOLUME:
                 decoded = audioop.mul(decoded, 2, 6)

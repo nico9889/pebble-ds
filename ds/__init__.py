@@ -1,5 +1,6 @@
 from threading import Lock
 
+from df import init_df
 from flask import Flask
 from flask_cors import CORS
 
@@ -7,9 +8,6 @@ from speex import SpeexDecoder
 from vosk import Model, KaldiRecognizer
 
 from ds.config import ORIGINS
-
-# FIXME: looking for a better alternative
-# from rnnoise_wrapper import RNNoise
 
 
 # Flask initialization
@@ -28,14 +26,8 @@ recognizer.SetPartialWords(True)
 # Initializing recognizer lock as we don't want it to be shared between users
 rec_lock = Lock()
 
-# Denoiser initialization
-try:
-    # rnnoise = RNNoise("/usr/local/lib/librnnoise.so")
-    raise Exception("RRNoise import temporary disabled")
-except Exception as e:
-    rnnoise = None
-    app.logger.warning("RNNoise not found")
-
+# Initializing DeepFilterNet
+filter_model, df_state, _ = init_df()  # Load default model
 
 # Everything is initialized, registering routes
 from ds.api import routes
