@@ -1,3 +1,9 @@
 from os import getenv
 
+# Set the allowed domain origin, if unset all the domains are allowed
 ORIGINS = (getenv("DS_ORIGINS") or "*").split(",")
+
+# Boosts the volume before transcribing, it may enhance or worsen the transcription
+BOOST_VOLUME = getenv("DS_BOOST_VOLUME") or False
+
+
