@@ -1,5 +1,8 @@
+import wave
+from io import BytesIO
+
 from ds import decoder, recognizer, rec_lock, filter_model, df_state
-from ds.config import BOOST_VOLUME, ENABLE_DEEP_FILTER_NET
+from ds.config import BOOST_VOLUME, ENABLE_DEEP_FILTER_NET, ENABLE_AUDIO_DEBUG
 
 if ENABLE_DEEP_FILTER_NET:
     from df import enhance
@@ -72,7 +75,7 @@ def asr():
     rec_lock.acquire()
     # Resetting Recognizer
     recognizer.Reset()
-
+    pcm = bytearray()
     try:
         for chunk in chunks:
             decoded = decoder.decode(chunk)
@@ -83,6 +86,11 @@ def asr():
             # Boosting the audio volume
             if BOOST_VOLUME:
                 decoded = audioop.mul(decoded, 2, 6)
+
+            # Saves the last received audio for debug purposes
+            if ENABLE_AUDIO_DEBUG:
+                pcm.extend(decoded)
+
             # Transcribing audio chunk
             recognizer.AcceptWaveform(decoded)
 
@@ -96,6 +104,13 @@ def asr():
             "Name": "AUDIO_INFO",
             "Prompt": "Error while decoding incoming audio."
         }))
+
+    if ENABLE_AUDIO_DEBUG:
+        with wave.open("/tmp/last_recording.wav", "wb") as f:
+            f.setnchannels(1)
+            f.setsampwidth(2)
+            f.setframerate(16000)
+            f.writeframes(pcm)
 
     try:
         if final["text"]:
