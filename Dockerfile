@@ -21,7 +21,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # libspeex is required by pyspeex
 # git is required by DeepFilterNet (for no good reasons at all)
-RUN apt update && apt install libspeex-dev libspeexdsp-dev git -y
+# libgomp1 libatomic1 are required for aarch64 images for some reasons
+RUN apt update && apt install libspeex-dev libspeexdsp-dev git libgomp1 libatomic1 -y
 
 WORKDIR /opt/pebble-ds
 COPY --from=build-deps /opt/pebble-ds/.venv /opt/pebble-ds/.venv
