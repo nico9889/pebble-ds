@@ -1,5 +1,15 @@
 from ds import decoder, recognizer, rec_lock, filter_model, df_state
-from df import enhance
+from ds.config import BOOST_VOLUME, ENABLE_DEEP_FILTER_NET
+
+if ENABLE_DEEP_FILTER_NET:
+    from df import enhance
+else:
+    def enhance(*args, **__):
+        try:
+            return args[2]
+        except IndexError:
+            return args
+
 from flask import request, Blueprint, current_app
 
 import audioop
@@ -7,8 +17,6 @@ from flask import Response
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
 import json
-
-from ds.config import BOOST_VOLUME, ENABLE_DEEP_FILTER_NET
 
 routes = Blueprint('routes', __name__)
 
