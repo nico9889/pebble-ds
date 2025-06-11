@@ -46,9 +46,6 @@ def asr():
 
     stream = request.stream
 
-    access_token, lang = request.host.split('.', 1)[0].split('-', 1)
-
-
     # Parsing request
     chunks = list(parse_chunks(stream))[3:]  # 0 = Content Type, 1 = Header?
 
