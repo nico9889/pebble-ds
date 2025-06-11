@@ -7,6 +7,9 @@
 >
 > Long live to Pebble 🫶
 
+> [!IMPORTANT]
+> Recent modifications in this repository are currently untested.
+
 # Pebble Offline Dictation Service
 
 This is a replacement dictation service based on Vosk Offline Speech To Text library.
