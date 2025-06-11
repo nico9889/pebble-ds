@@ -4,7 +4,6 @@ from flask import request, Blueprint, current_app
 
 import audioop
 from flask import Response
-from pydub import AudioSegment
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
 import json
@@ -69,12 +68,8 @@ def asr():
             decoded = decoder.decode(chunk)
             # Boosting the audio volume
             decoded = audioop.mul(decoded, 2, 6)
-            audio = AudioSegment(decoded, sample_width=2, frame_rate=16000, channels=1)
-            if rnnoise:
-                audio = rnnoise.filter(audio[0:10]) + rnnoise.filter(audio[10:20])
             # Transcribing audio chunk
-            recognizer.AcceptWaveform(audio.raw_data)
-            # complete += audio
+            recognizer.AcceptWaveform(decoded)
 
         # complete.export(out_f="out.wav", format="wav")
         final = json.loads(recognizer.Result())
