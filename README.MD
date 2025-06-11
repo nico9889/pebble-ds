@@ -7,21 +7,10 @@
 >
 > Long live to Pebble 🫶
 
-> [!WARNING]
-> This project relies on Speex to decode the audio packets received by the Pebble App.
->
-> Unfortunately Speex is quite a old codec and the Python library is unmaintained and it has become unusable on recent Python versions.
->
-> This means that most of the libaries must be kept at an outdated version to support older Python version, with an always growing amount of opened security issues.
->
-> Use this software at your own risk.
->
-> **Some of the previously linked libraries make use a patched version of PySpeex that works with recent version of Python, so this warning doesn't apply to those.**
-
 # Pebble Offline Dictation Service
 
 This is a replacement dictation service based on Vosk Offline Speech To Text library.
-It works fine on a Raspberry Pi 4, though there are some limitation (see install).
+It works fine on a Raspberry Pi 4, though there is some limitation (see install).
 
 ## How to install
 
@@ -56,7 +45,7 @@ sudo apt-get install build-essential libspeex-dev libspeexdsp-dev libpulse-dev
 pip install -r requirements.txt
 ```
 
-**Note:** Gunicorn may fail to install because of a bug. A patch exists and has been merged on the Gunicorn repository
+**Note:** Gunicorn may fail to install because of a bug. A patch exists and has been merged on the Gunicorn repository, 
 but it's still not released.
 
 Workaround:
@@ -78,12 +67,12 @@ vosk-transcriber --list-languages
 
 * Start the application:
 ```shell
-python app.py
+python ds.py
 ```
 
-To use the application you need to apply a Reverse Proxy (I.E: Nginx) in front of the app to upgrade the connection
+To use the application, you need to apply a Reverse Proxy (I.E: Nginx) in front of the app to upgrade the connection
 from HTTP to HTTPS, a self-signed certificate should be enough.
-As an alternative you can use Cloudflare Tunnel service (though it may be not the best solution if privacy is a major
+As an alternative, you can use Cloudflare Tunnel service (though it may be not the best solution if privacy is a major
 concern to you).
 
 Steps on Rebble Website:
@@ -125,7 +114,7 @@ If everything has been done correctly, in the Pebble App settings, Dictation sec
 only the languages that you configured as available. **Be sure to select a language to override the default settings**.
 
 ## Start as a service
-The following steps has been tested only on Raspberry Pi and MAY work on Debian/Ubuntu:
+The following steps have been tested only on Raspberry Pi and MAY work on Debian/Ubuntu:
 * Create a new service with your favourite editor (I use Nano, at least I know how to close it):
 ```shell
 sudo nano /etc/systemd/system/pebble-ds.conf
@@ -141,7 +130,7 @@ User=pi
 Group=www-data
 WorkingDirectory=/PATH_TO_PEBBLE_DS/pebble-ds/
 Environment="PATH=/PATH_TO_PEBBLE_DS/pebble-ds/venv/bin"
-ExecStart=/PATH_TO_PEBBLE_DS/pebble-ds/venv/bin/gunicorn --access-logfile - --workers 1 --bind 127.0.0.1:9001 --worker-class eventlet app:app
+ExecStart=/PATH_TO_PEBBLE_DS/pebble-ds/venv/bin/gunicorn --access-logfile - --workers 1 --bind 127.0.0.1:9001 --worker-class eventlet ds:ds
 
 [Install]
 WantedBy=multi-user.target
