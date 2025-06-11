@@ -31,11 +31,10 @@ def heartbeat():
 
 # From: https://github.com/pebble-dev/rebble-asr/blob/37302ebed464b7354accc9f4b6aa22736e12b266/asr/__init__.py#L27
 def parse_chunks(stream):
-    boundary = b'--' + request.headers['content-type'].split(';')[1].split('=')[1].encode(
-        'utf-8').strip()  # super lazy/brittle parsing.
+    boundary = b'--' + request.headers['content-type'].split(';')[1].split('=')[1].encode('utf-8').strip()  # super lazy/brittle parsing.
     this_frame = b''
-    content = stream.read(4096)
-    while content != b'':
+    while True:
+        content = stream.read(4096)
         this_frame += content
         end = this_frame.find(boundary)
         if end > -1:
@@ -47,7 +46,8 @@ def parse_chunks(stream):
                 except ValueError:
                     continue
                 yield content[:-2]
-        content = stream.read(4096)
+        if content == b'':
+            break
 
 
 @routes.post("/NmspServlet/")
